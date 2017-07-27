@@ -30,11 +30,11 @@ CHECKPOINTS_PATH = "./checkpoints/" + CKPT_NAME
 IMAGE_FORMAT = "*.bmp" #*.jpg or *.bmp
 SAVE_PATH = "./result/" + CKPT_NAME
 
-# set GPU 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
-from tensorflow.python.client import device_lib
-print device_lib.list_local_devices()
+# # set GPU 
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+# os.environ["CUDA_VISIBLE_DEVICES"]="2"
+# from tensorflow.python.client import device_lib
+# print device_lib.list_local_devices()
 
 
 def get_img_list(data_path):
@@ -81,26 +81,6 @@ def get_test_image(test_list, offset, batch_size):
         cbcr_list.append(cbcr_img)
         scale_list.append(pair[4])
     return input_list, bic_list, gt_list, cbcr_list, scale_list
-
-def div_norm(input_, k_size=3):
-    mean = tf.nn.avg_pool(input_, ksize=[1, k_size, k_size, 1],
-                            strides=[1, 1, 1, 1], padding='SAME')
-    mean = tf.reduce_mean(mean, axis=3, keep_dims=True)
-    v = input_ - mean
-    var = tf.nn.avg_pool(v ** 2, ksize=[1, k_size, k_size, 1],
-                            strides=[1, 1, 1, 1], padding="SAME")
-    var = tf.reduce_mean(var, axis=3, keep_dims=True)
-    sigma = tf.constant(0.5)
-    return v / tf.sqrt(var + sigma**2)
-
-def local_var(input_, k_size=3):
-    mean = tf.nn.avg_pool(input_, ksize=[1, k_size, k_size, 1],
-                            strides=[1, 1, 1, 1], padding='SAME')
-    mean = tf.reduce_mean(mean, axis=3, keep_dims=True)
-    v = input_ - mean
-    var = tf.nn.avg_pool(v ** 2, ksize=[1, k_size, k_size, 1],
-                            strides=[1, 1, 1, 1], padding="SAME")
-    return tf.reduce_mean(var, axis=3, keep_dims=True)
 
 def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
     folder_list = glob.glob(os.path.join(data_path, DATASET))
