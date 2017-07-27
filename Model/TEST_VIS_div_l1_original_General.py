@@ -13,18 +13,22 @@ from PSNR import psnr255
 from MODEL_div_l1_original import model
 from Subpixel import sb_test
 
-SCALE_FACTOR = 2
-DATASET = "testForValidation_d"
-EPOCH = 30 # Epoch you want to test
+### controller #####################
+SCALE_FACTOR = 2 # scale factor
+DATASET = "nova_d" # Dataset you want to infer
+EPOCH = 40 # Model epoch you want to infer
+CKPT_NAME = "x2_div_l1_original_0.25tv_ON_LAPSR_manga" # Model name
+####################################
+
 SAVEIMAGE_OR_DISPLAYPSNR = 0
 '''
 0: Save Image, 1: Display
 '''
 
 DATA_PATH = "../dataset/mat/test/x%d/"%SCALE_FACTOR
-CHECKPOINTS_PATH = "./checkpoints/x2_div_l1_original_0.25tv_ON_LAPSR_manga"
+CHECKPOINTS_PATH = "./checkpoints/" + CKPT_NAME
 IMAGE_FORMAT = "*.bmp" #*.jpg or *.bmp
-SAVE_PATH = "./result/x2_div_l1_original_0.25tv_ON_LAPSR_manga"
+SAVE_PATH = "./result/" + CKPT_NAME
 
 # set GPU 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
@@ -114,8 +118,8 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
         img_list = get_img_list(folder_path)
         for i in range(len(img_list)):
 
-            if i != 1:
-                continue
+            # if i != 1:
+            #     continue
 
             print("TESTING IMAGE [%02d/%02d]"%(i+1,len(img_list)))
             
@@ -208,7 +212,7 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
             if SAVEIMAGE_OR_DISPLAYPSNR == 0:
                 if not os.path.exists(SAVE_PATH +'_'+ DATASET):
                     os.makedirs(SAVE_PATH +'_'+ DATASET)
-                result.save(SAVE_PATH +'_'+ DATASET + '/%d_%d_%s.bmp' % (i, epoch, METHOD))
+                result.save(SAVE_PATH +'_'+ DATASET + '/id%d_epoch%d_%s_%s.bmp' % (i, epoch, METHOD, CKPT_NAME))
             
             #PSNR and PLOT
             else:
