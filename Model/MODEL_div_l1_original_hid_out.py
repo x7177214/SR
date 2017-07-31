@@ -13,11 +13,6 @@ def prelu(x, weights, scope='prelu'):
 
     return pos + neg, weights
 
-def layer_norm(input_, name='layer_norm'):
-    return tf.contrib.layers.layer_norm(input_,
-                scale=True,
-                scope=name)
-
 def div_norm(input_, weights, loss_v_l1, name="div_norm", k_size=3):
     with tf.variable_scope(name):
         mean = tf.nn.avg_pool(input_, ksize=[1, k_size, k_size, 1],
@@ -81,7 +76,7 @@ def model(input_tensor, bic_tesor, r, train):
 
     feature_map3 = tensor
 
-    # Conv4 1x1@32
+    # Conv4 3x3@32
     conv_4_w = tf.get_variable("conv_4_w", [3, 3, 5, 32],
                                initializer=tf.random_normal_initializer(stddev=0.001))
     conv_4_b = tf.get_variable("conv_4_b", [32],
