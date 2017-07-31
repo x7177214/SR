@@ -56,10 +56,10 @@ args = parser.parse_args()
 model_path = args.model_path
 
 # set GPU 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-from tensorflow.python.client import device_lib
-print device_lib.list_local_devices()
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+# os.environ["CUDA_VISIBLE_DEVICES"]="0"
+# from tensorflow.python.client import device_lib
+# print device_lib.list_local_devices()
 
 def get_train_list(data_path):
     l = glob.glob(os.path.join(data_path, "*"))
@@ -195,11 +195,6 @@ if __name__ == '__main__':
                     input_img = scipy.io.loadmat(file_list[i][1])['patch'].reshape(
                         [IN_IMG_SIZE[0], IN_IMG_SIZE[1], 1])
                     gt_img = scipy.io.loadmat(file_list[i][0])['patch'].reshape(
-                        [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1])
-                    # gradent maps are in the 3-rd and 4-th indices AND keys 'gx', 'gy'
-                    gt_gx_img = scipy.io.loadmat(file_list[i][3])['g_x'].reshape(
-                        [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1])
-                    gt_gy_img = scipy.io.loadmat(file_list[i][4])['g_y'].reshape(
                         [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1])
                     sess.run(enqueue_op, feed_dict={train_bic_single: bic_img,
                             train_input_single: input_img, 
