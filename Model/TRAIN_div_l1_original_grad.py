@@ -10,12 +10,14 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import scipy.io
-from MODEL_div_l1_original import model # original : no gamma and beta ; with l1 regularization
+from MODEL_div_l1_original_xav import model # original : no gamma and beta ; with l1 regularization
 #######Controler########
-SCALE_FACTOR = 4
+SCALE_FACTOR = 2
+LAMBDA = 1.25 # total_loss = loss + LAMBDA * loss_grad + L1_regularization
+TRAIN_DATA = 'LAPSR_manga'
 ########################
-CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_grad_plus_more_manga"%SCALE_FACTOR
-TRAIN_DATA_PATH = "../dataset/mat/train/x%d/LAPSR_more_manga_grad"%SCALE_FACTOR
+CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_%.2fgrad_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA)
+TRAIN_DATA_PATH = "../dataset/mat/train/x%d/%s" % (SCALE_FACTOR, TRAIN_DATA)
 
 IN_IMG_SIZE = (17, 17)
 OUT_IMG_SIZE = (17 * SCALE_FACTOR, 17 * SCALE_FACTOR)
@@ -31,7 +33,6 @@ LR_STEP_SIZE = 300
 START_EPOCH = 0
 MAX_EPOCH = 301
 USE_QUEUE_LOADING = True
-LAMBDA = 0.75 # total_loss = loss + LAMBDA * loss_grad + L1_regularization 
 
 if not os.path.exists(CHECKPOINT_PATH):
     os.makedirs(CHECKPOINT_PATH)
@@ -54,6 +55,12 @@ parser.add_argument("--model_path")
 args = parser.parse_args()
 model_path = args.model_path
 
+# set GPU 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+from tensorflow.python.client import device_lib
+print device_lib.list_local_devices()
+
 def get_train_list(data_path):
     l = glob.glob(os.path.join(data_path, "*"))
     l = [f for f in l if re.search("^\d+.mat$", os.path.basename(f))]
@@ -62,13 +69,13 @@ def get_train_list(data_path):
     for f in l:
         if os.path.exists(f):
             if os.path.exists(f[:-4] + "_2.mat"):
-                train_list.append([f, f[:-4] + "_2.mat", f[:-4] + "_2b.mat", f[:-4] + "_gx.mat", f[:-4] + "_gy.mat"])
+                train_list.append([f, f[:-4] + "_2.mat", f[:-4] + "_2b.mat"])
                 # train_list.append([f, f[:-4] + "_2.mat"])
             if os.path.exists(f[:-4] + "_3.mat"):
-                train_list.append([f, f[:-4] + "_3.mat", f[:-4] + "_3b.mat", f[:-4] + "_gx.mat", f[:-4] + "_gy.mat"])
+                train_list.append([f, f[:-4] + "_3.mat", f[:-4] + "_3b.mat"])
                 # train_list.append([f, f[:-4] + "_3.mat"])
             if os.path.exists(f[:-4] + "_4.mat"):
-                train_list.append([f, f[:-4] + "_4.mat", f[:-4] + "_4b.mat", f[:-4] + "_gx.mat", f[:-4] + "_gy.mat"])
+                train_list.append([f, f[:-4] + "_4.mat", f[:-4] + "_4b.mat"])
                 # train_list.append([f, f[:-4] + "_4.mat"])
     return train_list
 
@@ -76,30 +83,19 @@ def get_image_batch(train_list, offset, batch_size):
     target_list = train_list[offset:offset + batch_size]
     input_list = []
     gt_list = []
-    gt_gx_list = []
-    gt_gy_list = []
     for pair in target_list:
         input_img = scipy.io.loadmat(pair[1])['patch']
         gt_img = scipy.io.loadmat(pair[0])['patch']
 
-        gt_gx = scipy.io.loadmat(pair[3])['g_x'] # gradent maps are in the 3-rd and 4-th indices
-        gt_gy = scipy.io.loadmat(pair[4])['g_y']
-        
         input_list.append(input_img)
         gt_list.append(gt_img)
 
-        gt_gx_list.append(gt_gx)
-        gt_gy_list.append(gt_gy)
     input_list = np.array(input_list)
     input_list.resize([BATCH_SIZE, IN_IMG_SIZE[1], IN_IMG_SIZE[0], 1])
     gt_list = np.array(gt_list)
     gt_list.resize([BATCH_SIZE, OUT_IMG_SIZE[1], OUT_IMG_SIZE[0], 1])
 
-    gt_gx_list = np.array(gt_gx_list)
-    gt_gx_list.resize([BATCH_SIZE, OUT_IMG_SIZE[1], OUT_IMG_SIZE[0], 1])
-    gt_gy_list = np.array(gt_gy_list)
-    gt_gy_list.resize([BATCH_SIZE, OUT_IMG_SIZE[1], OUT_IMG_SIZE[0], 1])
-    return input_list, gt_list, gt_gx_list, gt_gy_list
+    return input_list, gt_list
 
 if __name__ == '__main__':
     train_list = get_train_list(TRAIN_DATA_PATH)
@@ -118,35 +114,36 @@ if __name__ == '__main__':
             tf.float32, shape=(IN_IMG_SIZE[0], IN_IMG_SIZE[1], 1))
         train_gt_single = tf.placeholder(
             tf.float32, shape=(OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1))
-        train_gt_gx_single = tf.placeholder(
-            tf.float32, shape=(OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1))
-        train_gt_gy_single = tf.placeholder(
-        tf.float32, shape=(OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1))
-        q = tf.FIFOQueue(1000, [tf.float32, tf.float32, tf.float32, tf.float32, tf.float32], [
+
+        q = tf.FIFOQueue(1000, [tf.float32, tf.float32, tf.float32], [
                          [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1],
                          [IN_IMG_SIZE[0], IN_IMG_SIZE[1], 1],
-                         [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1],
-                         [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1],
                          [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1]]
                          )
-        enqueue_op = q.enqueue([train_bic_single, train_input_single, train_gt_single, train_gt_gx_single, train_gt_gy_single])
-        train_bic, train_input, train_gt, train_gt_gx, train_gt_gy = q.dequeue_many(BATCH_SIZE)
+        enqueue_op = q.enqueue([train_bic_single, train_input_single, train_gt_single])
+        train_bic, train_input, train_gt = q.dequeue_many(BATCH_SIZE)
 
     shared_model = tf.make_template('shared_model', model)
     train_output, weights, loss_v_l1 = shared_model(train_input, train_bic, SCALE_FACTOR, True)
 
-    # cal. gradient map
+    # Kernels to cal. gradient map
     grad_x = tf.constant([-0.5, 0.0, 0.5], tf.float32)
     grad_x_filter = tf.reshape(grad_x, [1, 3, 1, 1])
     grad_y_filter = tf.transpose(grad_x_filter, [1, 0, 2, 3])
 
+    # predicted 
     train_output_gx = tf.nn.conv2d(train_output, grad_x_filter, strides=[1, 1, 1, 1], padding='SAME')
     train_output_gy = tf.nn.conv2d(train_output, grad_y_filter, strides=[1, 1, 1, 1], padding='SAME')
+
+    # GT
+    train_gt_gx = tf.nn.conv2d(train_gt, grad_x_filter, strides=[1, 1, 1, 1], padding='SAME')
+    train_gt_gy = tf.nn.conv2d(train_gt, grad_y_filter, strides=[1, 1, 1, 1], padding='SAME')
 
     # [LOSS] L2 norm
     #loss = tf.reduce_sum(tf.nn.l2_loss(train_output - train_gt))
     # [LOSS] Chabonnier
     loss = tf.reduce_sum(tf.sqrt(tf.square(train_output - train_gt)+tf.square(1e-3)))
+
     # [LOSS] Gradient loss in form of Chabonnier
     loss_grad_x = tf.reduce_sum(tf.sqrt(tf.square(train_output_gx - train_gt_gx)+tf.square(1e-3)))
     loss_grad_y = tf.reduce_sum(tf.sqrt(tf.square(train_output_gy - train_gt_gy)+tf.square(1e-3)))
@@ -207,8 +204,6 @@ if __name__ == '__main__':
                     sess.run(enqueue_op, feed_dict={train_bic_single: bic_img,
                             train_input_single: input_img, 
                             train_gt_single: gt_img,
-                            train_gt_gx_single: gt_gx_img,
-                            train_gt_gy_single: gt_gy_img
                             })
                     count += 1
 

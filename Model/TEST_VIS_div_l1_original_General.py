@@ -36,7 +36,6 @@ SAVE_PATH = "./result/" + CKPT_NAME
 # from tensorflow.python.client import device_lib
 # print device_lib.list_local_devices()
 
-
 def get_img_list(data_path):
     l = glob.glob(os.path.join(data_path, "*"))
     l = [f for f in l if re.search("^\d+.mat$", os.path.basename(f))]
@@ -117,7 +116,6 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
 
             img_3b = img_3b.reshape((y.shape[0], y.shape[1], 1))
 
-
             y = (y + img_3b) * 255.0 
             img_cbcr = img_cbcr * 255.0
 
@@ -183,8 +181,9 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
             result[:, :, 1] = k1 * tmp[:, :, 0] + k4 * tmp[:, :, 1] + k5 * tmp[:, :, 2]
             result[:, :, 2] = k1 * tmp[:, :, 0] + k6 * tmp[:, :, 1] + k7 * tmp[:, :, 2]
             
-            result[np.where(result < 0.0)] = 0.0
-            result[np.where(result > 255.0)] = 255.0
+            # result[np.where(result < 0.0)] = 0.0
+            # result[np.where(result > 255.0)] = 255.0
+            result = np.clip(result, 0.0, 255.0)
 
             result = Image.fromarray(np.uint8(result), mode='RGB')
             
