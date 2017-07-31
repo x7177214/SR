@@ -75,8 +75,8 @@ def model(input_tensor, bic_tesor, r, train):
     tensor, weights, loss_v_l1 = div_norm(tensor, weights, loss_v_l1, name='norm_3')
     tensor, weights = prelu(tensor, weights, scope='prelu_3')
 
-    # Conv4 1x1@32
-    conv_4_w = tf.get_variable("conv_4_w", [1, 1, 5, 32],
+    # Conv4 3x3@32
+    conv_4_w = tf.get_variable("conv_4_w", [3, 3, 5, 32],
                                initializer=tf.contrib.layers.xavier_initializer_conv2d())
     conv_4_b = tf.get_variable("conv_4_b", [32],
                                initializer=tf.constant_initializer(0))
