@@ -10,13 +10,13 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import scipy.io
-from MODEL_div_l1_original import model # original : no gamma and beta ; with l1 regularization
+from MODEL_div_l1_original_xav import model # original : no gamma and beta ; with l1 regularization
 #######Controler########
 SCALE_FACTOR = 2
-LAMBDA = 3.5063 # total_loss = loss + LAMBDA * loss_tv@strong_edge + L1_regularization
+LAMBDA = 1.75 # total_loss = loss + LAMBDA * loss_tv@strong_edge + L1_regularization
 TRAIN_DATA = 'LAPSR_manga_edge' # LAPSR_more_manga_edge Set5_edge
 ########################
-CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_edge_%.4ftv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA) 
+CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_edge_%.2ftv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA) 
 TRAIN_DATA_PATH = "../dataset/mat/train/x%d/%s" % (SCALE_FACTOR, TRAIN_DATA)
 
 IN_IMG_SIZE = (17, 17)
@@ -185,6 +185,8 @@ if __name__ == '__main__':
                     # The edge map is in the 3-rd index ,AND key: 'edge_patch'
                     gt_edge_img = scipy.io.loadmat(file_list[i][3])['edge_patch'].reshape(
                         [OUT_IMG_SIZE[0], OUT_IMG_SIZE[1], 1])
+
+                    gt_edge_img = np.asarray(gt_edge_img, dtype = np.float32)
 
                     sess.run(enqueue_op, feed_dict={train_bic_single: bic_img,
                             train_input_single: input_img, 

@@ -10,13 +10,13 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import scipy.io
-from MODEL_div_l1_original_xav import model # original : no gamma and beta ; with l1 regularization
+from MODEL_div_l1_original_res_xav import model # original : no gamma and beta ; with l1 regularization
 #######Controler########
 SCALE_FACTOR = 2
-LAMBDA = 0.32 # total_loss = loss + LAMBDA * loss_tv + L1_regularization
+LAMBDA = 1.75 # total_loss = loss + LAMBDA * loss_tv + L1_regularization
 TRAIN_DATA = 'LAPSR_manga'
 ########################
-CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_%.2ftv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA)
+CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_%.2frestv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA)
 TRAIN_DATA_PATH = "../dataset/mat/train/x%d/%s" % (SCALE_FACTOR, TRAIN_DATA)
 
 IN_IMG_SIZE = (17, 17)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
         train_bic, train_input, train_gt = q.dequeue_many(BATCH_SIZE)
 
     shared_model = tf.make_template('shared_model', model)
-    train_output, weights, loss_v_l1 = shared_model(train_input, train_bic, SCALE_FACTOR, True)
+    train_output, weights, loss_v_l1, res = shared_model(train_input, train_bic, SCALE_FACTOR, True)
 
     # [LOSS] L2 norm
     # loss = tf.reduce_sum(tf.nn.l2_loss(train_output - train_gt))
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     loss = tf.reduce_sum(tf.sqrt(tf.square(train_output - train_gt)+tf.square(1e-3)))
         
     # [LOSS] image total variation
-    loss_tv = tf.reduce_sum(tf.image.total_variation(train_output))
+    loss_tv = tf.reduce_sum(tf.image.total_variation(res))
 
     # [LOSS] DN feature map L1 
     loss_v_l1 = tf.reduce_mean(loss_v_l1)
