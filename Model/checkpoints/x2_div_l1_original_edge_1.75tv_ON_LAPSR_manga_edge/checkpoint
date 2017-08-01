@@ -1,0 +1,2 @@
+model_checkpoint_path: "epoch_025.ckpt-324064"
+all_model_checkpoint_paths: "epoch_025.ckpt-324064"
