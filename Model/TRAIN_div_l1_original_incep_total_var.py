@@ -10,13 +10,13 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import scipy.io
-from MODEL_div_l1_original import model # original : no gamma and beta ; with l1 regularization
+from MODEL_div_l1_original_incep import model # original : no gamma and beta ; with l1 regularization
 #######Controler########
 SCALE_FACTOR = 2
-LAMBDA = 0.39 # total_loss = loss + LAMBDA * loss_tv + L1_regularization
+LAMBDA = 0.25 # total_loss = loss + LAMBDA * loss_tv + L1_regularization
 TRAIN_DATA = 'LAPSR_manga'
 ########################
-CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_%.2ftv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA)
+CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_incep_%.2ftv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA)
 TRAIN_DATA_PATH = "../dataset/mat/train/x%d/%s" % (SCALE_FACTOR, TRAIN_DATA)
 
 IN_IMG_SIZE = (17, 17)
@@ -202,8 +202,6 @@ if __name__ == '__main__':
 
                     Ltv, _, l, output, lr, g_step = sess.run(
                         [loss_tv, opt, loss, train_output, learning_rate, global_step])
-                    # print(np.sum(l))
-                    # print(np.sum(Ltv))
                     print "[epoch %2.4f] loss %.4f LAMBDA*ltv %.4f lr %.8f " % (epoch + (float(step) * BATCH_SIZE / len(train_list)), np.sum(l) / BATCH_SIZE, LAMBDA*np.sum(Ltv) / BATCH_SIZE, lr)
                     
                 if epoch % 5 == 0:

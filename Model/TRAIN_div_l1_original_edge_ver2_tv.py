@@ -10,10 +10,10 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import scipy.io
-from MODEL_div_l1_original_xav import model # original : no gamma and beta ; with l1 regularization
+from MODEL_div_l1_original import model # original : no gamma and beta ; with l1 regularization
 #######Controler########
 SCALE_FACTOR = 2
-LAMBDA = 1.75 # total_loss = loss + LAMBDA * loss_tv@strong_edge + L1_regularization
+LAMBDA = 0.40 # total_loss = loss + LAMBDA * loss_tv@strong_edge + L1_regularization
 TRAIN_DATA = 'LAPSR_manga_edge' # LAPSR_more_manga_edge Set5_edge
 ########################
 CHECKPOINT_PATH = "./checkpoints/x%d_div_l1_original_edge_%.2ftv_ON_%s" % (SCALE_FACTOR, LAMBDA, TRAIN_DATA) 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     # [LOSS] L2 norm
     # loss = tf.reduce_sum(tf.nn.l2_loss(train_output - train_gt))
     # [LOSS] Chabonnier
-    loss = tf.reduce_sum(tf.sqrt(tf.square(train_output - train_gt)+tf.square(1e-3)))
+    loss_c = tf.reduce_sum(tf.sqrt(tf.square(train_output - train_gt)+tf.square(1e-3)))
         
     # [LOSS] image total variation @ edge strong region
     loss_tv = tf.reduce_sum(tf.image.total_variation(tf.multiply(train_output, train_gt_edge)))
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     # [LOSS] DN feature map L1 
     loss_v_l1 = tf.reduce_mean(loss_v_l1)
 
-    loss = loss + LAMBDA * loss_tv + loss_v_l1
+    loss = loss_c + LAMBDA * loss_tv + loss_v_l1
 
     #for w in weights:
     #    loss += tf.nn.l2_loss(w)*1e-4
@@ -215,9 +215,9 @@ if __name__ == '__main__':
         if USE_QUEUE_LOADING:
             for epoch in xrange(START_EPOCH, MAX_EPOCH):
                 for step in range(len(train_list) // BATCH_SIZE):
-                    l1, _, l, output, lr, g_step = sess.run(
-                        [loss_v_l1, opt, loss, train_output, learning_rate, global_step])
-                    print "[epoch %2.4f] loss %.4f l1 %.8f lr %.8f " % (epoch + (float(step) * BATCH_SIZE / len(train_list)), np.sum(l) / BATCH_SIZE, l1, lr)
+                    Ltv, _, l, output, lr, g_step = sess.run(
+                        [loss_tv, opt, loss, train_output, learning_rate, global_step])
+                    print "[epoch %2.4f] loss %.4f LAMBDA*l_tv %7.2f lr %.8f " % (epoch + (float(step) * BATCH_SIZE / len(train_list)), np.sum(l) / BATCH_SIZE, LAMBDA*np.sum(Ltv) / BATCH_SIZE, lr)
                 if epoch % 5 == 0:
                     saver.save(sess, CHECKPOINT_PATH + "/epoch_%03d.ckpt" %
                                epoch, global_step=global_step)
