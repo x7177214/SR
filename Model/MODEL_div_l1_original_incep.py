@@ -2,18 +2,15 @@ import tensorflow as tf
 import numpy as np
 from Subpixel import sb
 
+'''
+    L2      L3
+    (5) 1x1 (5) (elementwise add)
+        3x3
+
+'''
+
+
 def prelu(x, weights, scope='prelu'):
-    with tf.variable_scope(scope):
-        alphas = tf.get_variable('alpha', x.get_shape()[-1],
-                                 initializer=tf.constant_initializer(0.0),
-                                 dtype=tf.float32)
-        weights.append(alphas)
-        pos = tf.nn.relu(x)
-        neg = alphas * (x - abs(x) * 0.5)
-
-    return pos + neg, weights
-
-def SU(x, weights, scope='SU'):
     with tf.variable_scope(scope):
         alphas = tf.get_variable('alpha', x.get_shape()[-1],
                                  initializer=tf.constant_initializer(0.0),
