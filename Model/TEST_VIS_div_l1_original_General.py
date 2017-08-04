@@ -10,14 +10,17 @@ import pickle
 import argparse
 import matplotlib.pyplot as plt
 from PSNR import psnr255
+#from MODEL_ESPCN import model
 from MODEL_div_l1_original import model
+#from MODEL_div_l1_original_11 import model
 from Subpixel import sb_test
 
 ### controller #####################
 SCALE_FACTOR = 2 # scale factor
-DATASET = "nova_d" # Dataset you want to infer
-EPOCH = 40 # Model epoch you want to infer
-CKPT_NAME = "x2_div_l1_original_0.25tv_ON_LAPSR_manga" # Model name
+DATASET = "nova_sub_4_d" # Dataset you want to infer
+EPOCH = 25 # Model epoch you want to infer
+CKPT_NAME = "x2_div_l1_original_edge_0.40tv_ON_LAPSR_manga_edge" # Model name
+#CKPT_NAME = "x4_div_l1_original" # Model name
 ####################################
 
 SAVEIMAGE_OR_DISPLAYPSNR = 0
@@ -35,6 +38,7 @@ SAVE_PATH = "./result/" + CKPT_NAME
 # os.environ["CUDA_VISIBLE_DEVICES"]="2"
 # from tensorflow.python.client import device_lib
 # print device_lib.list_local_devices()
+
 
 def get_img_list(data_path):
     l = glob.glob(os.path.join(data_path, "*"))
@@ -87,7 +91,7 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
 
     input_tensor = tf.placeholder(tf.float32, shape=(1, None, None, 1)) 
     output_tensor, weights, loss_v_l1 = shared_model(input_tensor, 0, SCALE_FACTOR, False)
-
+    #output_tensor, weights = shared_model(input_tensor, SCALE_FACTOR, False)
     saver = tf.train.Saver(weights)
     tf.global_variables_initializer().run()
     saver.restore(sess, ckpt_path)
@@ -97,9 +101,8 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
         img_list = get_img_list(folder_path)
         for i in range(len(img_list)):
 
-            # if i != 1:
-            #     continue
-
+            if i != 0:
+                continue
             print("TESTING IMAGE [%02d/%02d]"%(i+1,len(img_list)))
             
             input_list, bic_list, gt_list, cbcr_list, scale_list = get_test_image(img_list, i, 1)
@@ -116,6 +119,7 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
 
             img_3b = img_3b.reshape((y.shape[0], y.shape[1], 1))
 
+            # y = y * 255.0
             y = (y + img_3b) * 255.0 
             img_cbcr = img_cbcr * 255.0
 
@@ -181,9 +185,8 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
             result[:, :, 1] = k1 * tmp[:, :, 0] + k4 * tmp[:, :, 1] + k5 * tmp[:, :, 2]
             result[:, :, 2] = k1 * tmp[:, :, 0] + k6 * tmp[:, :, 1] + k7 * tmp[:, :, 2]
             
-            # result[np.where(result < 0.0)] = 0.0
-            # result[np.where(result > 255.0)] = 255.0
-            result = np.clip(result, 0.0, 255.0)
+            result[np.where(result < 0.0)] = 0.0
+            result[np.where(result > 255.0)] = 255.0
 
             result = Image.fromarray(np.uint8(result), mode='RGB')
             
