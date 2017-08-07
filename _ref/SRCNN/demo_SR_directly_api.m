@@ -70,6 +70,9 @@ for f_iter = 1:numel(f_lst)
 
     %% bicubic interpolation
     im = single(im)/255.0;
+    cb = double(cb);
+    cr = double(cr);
+    
     im_b = imresize(im, up_scale, 'bicubic');
     cb_b = imresize(cb, up_scale, 'bicubic');
     cr_b = imresize(cr, up_scale, 'bicubic');
@@ -85,20 +88,22 @@ for f_iter = 1:numel(f_lst)
     im_H = zeros(size(im_h, 1), size(im_h, 2), 3);
 
     im_H(:, :, 1) = im_h;
-    im_H(:, :, 2) = cb_b;
-    im_H(:, :, 3) = cr_b;
+    im_H(:, :, 2) = uint8(cb_b);
+    im_H(:, :, 3) = uint8(cr_b);
 
+    im_H = uint8(im_H);
+    
     %% YCbCr 2 RGB
 
     %im_h = YCBCRtoRGB(im_H);
-    im_h = ycbcr2rgb(im_H);
+    im_h2 = ycbcr2rgb(im_H);
 
     %% show results
 
     %figure, imshow(im_h); title('SRCNN Reconstruction');
     
     %split_name = strsplit(f_info.name, '.');
-    imwrite(im_h, [folder1, f_info.name, '_SRCNN_x2_955' '.bmp']);
+    imwrite(im_h2, [folder1, f_info.name, '_SRCNN_x2_955' '.bmp']);
     
     clear im_h;
     clear im_H;
