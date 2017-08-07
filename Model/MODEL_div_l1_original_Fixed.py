@@ -47,7 +47,7 @@ def model(input_tensor, bic_tesor, r, train):
     tensor, weights = prelu(tensor, weights, scope='prelu_1')
 
     # Conv2 1x1@5
-    conv_2_w = tf.get_variable("conv_2_w", [1, 1, 64, 5],
+    conv_2_w = tf.get_variable("conv_2_w", [1, 1, 32, 5],
                                initializer=tf.random_normal_initializer(stddev=0.001))
     conv_2_b = tf.get_variable("conv_2_b", [5],
                                initializer=tf.constant_initializer(0))
