@@ -14,6 +14,10 @@ from PSNR import psnr255
 from MODEL_div_l1_original import model
 from Subpixel import sb_test
 
+'''
+bicubic or nearest-neighbor upscaling
+'''
+
 ### controller #####################
 SCALE_FACTOR = 2 # scale factor
 DATASET = "nova_sub4_d" # Dataset you want to infer
@@ -112,13 +116,12 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
             y = sess.run([output_tensor], feed_dict={input_tensor: y})
             y = sb_test(y, SCALE_FACTOR)
 
-            print y.shape
 
             img_3b = np.copy(img_small) 
             img_3b = img_3b.reshape((img_small.shape[0], img_small.shape[1])) # HxW
-            print img_3b.shape
+
             img_3b = cv2.resize(img_3b, (SCALE_FACTOR*img_small.shape[1], SCALE_FACTOR*img_small.shape[0]), interpolation=0)
-            print img_3b.shape
+
 
             img_3b = img_3b.reshape((y.shape[0], y.shape[1], 1))
 
