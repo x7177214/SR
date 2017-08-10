@@ -10,10 +10,7 @@ import pickle
 import argparse
 import matplotlib.pyplot as plt
 from PSNR import psnr255
-#from MODEL_ESPCN import model
-#from MODEL_div_l1_original_incep import model
-from MODEL_div_l1_original import model
-#from MODEL_div_l1_original_11 import model
+from MODEL_div_l1_original_two_sub import model
 from Subpixel import sb_test
 
 ### controller #####################
@@ -98,9 +95,7 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
     print 'folder_list', folder_list
 
     input_tensor = tf.placeholder(tf.float32, shape=(1, None, None, 1)) 
-    output_tensor, weights, loss_v_l1 = shared_model(input_tensor, 0, SCALE_FACTOR, False)
-    #output_tensor, weights = shared_model(input_tensor, SCALE_FACTOR, False)
-
+    output_tensor, output_main_tensor, weights, loss_v_l1 = shared_model(input_tensor, SCALE_FACTOR, False)
     saver = tf.train.Saver(weights)
     tf.global_variables_initializer().run()
     saver.restore(sess, ckpt_path)
@@ -122,13 +117,15 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
 
             y = img_small.reshape((1, img_small.shape[0], img_small.shape[1], 1))
 
-            y = sess.run([output_tensor], feed_dict={input_tensor: y})
-            y = sb_test(y, SCALE_FACTOR)
+            yr = sess.run([output_tensor], feed_dict={input_tensor: y})
+            ym = sess.run([output_main_tensor], feed_dict={input_tensor: y})
+            yr = sb_test(yr, SCALE_FACTOR)
+            ym = sb_test(ym, SCALE_FACTOR)
 
-            img_3b = img_3b.reshape((y.shape[0], y.shape[1], 1))
+            img_3b = img_3b.reshape((yr.shape[0], yr.shape[1], 1))
 
-            y = y * 255.0
-            # y = (y + img_3b) * 255.0 
+            # y = y * 255.0
+            y = (yr + ym) * 255.0 
             img_cbcr = img_cbcr * 255.0
 
             # method_1

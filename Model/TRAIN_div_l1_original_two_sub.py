@@ -113,7 +113,7 @@ if __name__ == '__main__':
         train_input, train_gt = q.dequeue_many(BATCH_SIZE)
 
     shared_model = tf.make_template('shared_model', model)
-    train_output, weights, loss_v_l1 = shared_model(train_input, SCALE_FACTOR)
+    train_output, _, weights, loss_v_l1 = shared_model(train_input, SCALE_FACTOR, True)
 
     # [LOSS] Chabonnier
     loss = tf.reduce_sum(tf.sqrt(tf.square(train_output - train_gt)+tf.square(1e-3)))
@@ -188,7 +188,7 @@ if __name__ == '__main__':
                 for step in range(len(train_list) // BATCH_SIZE):
                     l1, _, l, output, lr, g_step = sess.run(
                         [loss_v_l1, opt, loss, train_output, learning_rate, global_step])
-                    print "[epoch %2.4f] loss %.4f LAMBDA*ltv %.2f lr %.8f " % (epoch + (float(step) * BATCH_SIZE / len(train_list)), np.sum(l) / BATCH_SIZE, np.sum(l1), lr)
+                    print "[epoch %2.4f] loss %.4f l1 %.8f lr %.8f " % (epoch + (float(step) * BATCH_SIZE / len(train_list)), np.sum(l) / BATCH_SIZE, np.sum(l1), lr)
                     
                 if epoch % 5 == 0:
                     saver.save(sess, CHECKPOINT_PATH + "/epoch_%03d.ckpt" %

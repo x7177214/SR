@@ -114,7 +114,7 @@ if __name__ == '__main__':
         train_input, train_gt = q.dequeue_many(BATCH_SIZE)
 
     shared_model = tf.make_template('shared_model', model)
-    train_output, weights, loss_v_l1 = shared_model(train_input, SCALE_FACTOR)
+    train_output, _, weights, loss_v_l1 = shared_model(train_input, SCALE_FACTOR, True)
 
     # [LOSS] Chabonnier
     loss = tf.reduce_sum(tf.sqrt(tf.square(train_output - train_gt)+tf.square(1e-3)))

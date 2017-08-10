@@ -29,7 +29,7 @@ def div_norm(input_, weights, loss_v_l1, name="div_norm", k_size=3):
 
         return v / tf.sqrt(var + sigma**2), weights, loss_v_l1
 
-def model(input_tensor, r):
+def model(input_tensor, r, Training):
     weights = []
     loss_v_l1 = []
     tesor = None
@@ -92,11 +92,7 @@ def model(input_tensor, r):
     tensor = tf.nn.bias_add(tf.nn.conv2d(tensor, conv_5_w,
                                          strides=[1, 1, 1, 1], padding='SAME'), conv_5_b)
     
-    #################### res_tesor #####################
-    # Sub-pixel layer(res)
-    res_tesor = sb(tensor, r)
-    ####################################################
-
+    
     #################### main_tesor ####################
     # input(1) -> 3x3 -> ouput(r * r)
 
@@ -122,9 +118,9 @@ def model(input_tensor, r):
 
     template = np.random.rand(3, 3, 1, 1) * 0.001
     template = np.array(template, dtype='float32')
-    template[0, 0, :, :] = 0.25
-    template[2, 0, :, :] = 0.25
-    template[0, 2, :, :] = 0.25
+    template[1, 1, :, :] = 0.25
+    template[1, 2, :, :] = 0.25
+    template[2, 1, :, :] = 0.25
     template[2, 2, :, :] = 0.25
     init = tf.constant(template)
     conv_0d_w = tf.get_variable("conv_0d_w", initializer=init, dtype=tf.float32)
@@ -144,10 +140,11 @@ def model(input_tensor, r):
     concat_tensor = tf.concat([fa, fb, fc, fd], 3)
     main_tesor = tf.nn.bias_add(concat_tensor, conv_0_b)
 
-    # Sub-pixel layer(main)
-    main_tesor = sb(main_tesor, r)
     ####################################################
 
-    tensor = tf.add(res_tesor, main_tesor)
+    if Training:
+        main_tesor = sb(main_tesor, r) #(main)
+        tensor = sb(tensor, r) #(res)
+        tensor = tf.add(tensor, main_tesor)
 
-    return tensor, weights, loss_v_l1
+    return tensor, main_tesor, weights, loss_v_l1
