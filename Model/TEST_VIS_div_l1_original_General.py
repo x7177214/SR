@@ -13,16 +13,19 @@ from PSNR import psnr255
 #from MODEL_ESPCN import model
 #from MODEL_div_l1_original_incep import model
 from MODEL_div_l1_original import model
+from MODEL_div_l1_original_Fixed_3x3 import model
+
 #from MODEL_div_l1_original_11 import model
 from Subpixel import sb_test
 
 ### controller #####################
 SCALE_FACTOR = 2 # scale factor
-DATASET = "testForValidation_d" # Dataset you want to infer,testForValidation_d
+DATASET = "nova_sub4_d" # Dataset you want to infer,testForValidation_d
 #DATASET = "testForValidation_d" # Dataset you want to infer,testForValidation_d
-EPOCH = 20 # Model epoch you want to infer 150
-CKPT_NAME = "x2_div_l1_original_two_sub_ON_LAPSR_manga" # Model name
-#CKPT_NAME = "x4_div_l1_original" # Model name
+EPOCH = 35 # Model epoch you want to infer 150
+CKPT_NAME = "x2_div_l1_original_0.25tvFix3-3_ON_LAPSR_manga" # Model name
+Set_GPU_here = True
+GPU_id = "0"
 ####################################
 
 SAVEIMAGE_OR_DISPLAYPSNR = 0
@@ -35,12 +38,12 @@ CHECKPOINTS_PATH = "./checkpoints/" + CKPT_NAME
 IMAGE_FORMAT = "*.bmp" #*.jpg or *.bmp
 SAVE_PATH = "./result/" + CKPT_NAME
 
-# # set GPU 
-# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-# os.environ["CUDA_VISIBLE_DEVICES"]="2"
-# from tensorflow.python.client import device_lib
-# print device_lib.list_local_devices()
-
+# set GPU 
+if Set_GPU_here:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+    os.environ["CUDA_VISIBLE_DEVICES"]=GPU_id
+    from tensorflow.python.client import device_lib
+    print device_lib.list_local_devices()
 
 def get_img_list(data_path):
     l = glob.glob(os.path.join(data_path, "*"))
@@ -127,8 +130,8 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
 
             img_3b = img_3b.reshape((y.shape[0], y.shape[1], 1))
 
-            y = y * 255.0
-            # y = (y + img_3b) * 255.0 
+            # y = y * 255.0
+            y = (y + img_3b) * 255.0 
             img_cbcr = img_cbcr * 255.0
 
             # method_1
