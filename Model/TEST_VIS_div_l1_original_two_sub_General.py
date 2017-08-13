@@ -15,10 +15,10 @@ from Subpixel import sb_test
 
 ### controller #####################
 SCALE_FACTOR = 2 # scale factor
-DATASET = "testForValidation_d" # Dataset you want to infer,testForValidation_d
+DATASET = "nova_sub_4_d" # Dataset you want to infer,testForValidation_d
 #DATASET = "testForValidation_d" # Dataset you want to infer,testForValidation_d
-EPOCH = 20 # Model epoch you want to infer 150
-CKPT_NAME = "x2_div_l1_original_two_sub_ON_LAPSR_manga" # Model name
+EPOCH = 75 # Model epoch you want to infer 150
+CKPT_NAME = "x2_div_l1_original_two_sub_0.25tv_ON_LAPSR_manga" # Model name
 #CKPT_NAME = "x4_div_l1_original" # Model name
 ####################################
 
