@@ -104,6 +104,7 @@ for f_iter = 1:numel(f_lst)
                 end
     % (original size) 
                 patch = patch2;
+                edge_patch(1, 1) = 1;
                 patch = roifilt2(h, patch, edge_patch);
                 save(patch_name, 'patch');
 
@@ -128,6 +129,7 @@ for f_iter = 1:numel(f_lst)
                 end
     % (original size) 
                 patch = patch2;
+                edge_patch(1, 1) = 1;
                 patch = roifilt2(h, patch, edge_patch);
                 save(patch_name, 'patch');
                 
