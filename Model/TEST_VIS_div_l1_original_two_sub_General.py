@@ -1,3 +1,7 @@
+'''
+replace bicubic up-sampling with sub-pixel method
+'''
+
 import numpy as np
 from scipy import misc
 from PIL import Image
