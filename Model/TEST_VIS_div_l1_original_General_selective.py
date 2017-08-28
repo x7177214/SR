@@ -1,3 +1,7 @@
+'''
+Generate images use bicubic or nearest-neighbor upscaling
+'''
+
 import numpy as np
 from scipy import misc
 from PIL import Image
@@ -14,9 +18,7 @@ from PSNR import psnr255
 from MODEL_div_l1_original import model
 from Subpixel import sb_test
 
-'''
-bicubic or nearest-neighbor upscaling
-'''
+
 
 ### controller #####################
 SCALE_FACTOR = 2 # scale factor
