@@ -1,3 +1,10 @@
+'''
+IMPORT .PY FILE @ DIFFERENT FOLDER
+import sys
+sys.path.insert(0, '/path/to/application/app/folder')
+import file
+'''
+
 import numpy as np
 from scipy import misc
 from PIL import Image
