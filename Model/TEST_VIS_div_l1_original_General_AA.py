@@ -1,3 +1,7 @@
+'''
+Generate images use anti-aliasing (MSAA) fashion
+'''
+
 import numpy as np
 from scipy import misc
 from PIL import Image
