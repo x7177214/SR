@@ -11,19 +11,18 @@ import argparse
 import matplotlib.pyplot as plt
 from PSNR import psnr255
 #from MODEL_ESPCN import model
-#from MODEL_div_l1_original_incep import model
 #from MODEL_div_l1_original import model
-#from MODEL_div_l1_original_Fixed_5633 import model
-from MODEL_div_l1_original_Fixed import model
+#from MODEL_div_l1_original_Fixed import model
+from MODEL_no_DN_no_l1 import model
 from Subpixel import sb_test
 
 ### controller #####################
 SCALE_FACTOR = 2 # scale factor
-DATASET = "nova_sub_4_d" # Dataset you want to infer,testForValidation_d
-#DATASET = "testForValidation_d" # Dataset you want to infer,testForValidation_d
-EPOCH = 45 # Model epoch you want to infer 150
-CKPT_NAME = "x2_div_l1_original_ON_LAPSR_manga_near" # Model name
-#CKPT_NAME = "x4_div_l1_original" # Model name
+DATASET = "nova_sub4_d" # Dataset want to infer
+EPOCH = 15 #  Model epoch want to infer
+CKPT_NAME = "x2_noDN_noL1_0.25tv_ON_LAPSR_manga" # check point folder name
+METHOD = 'm3' # method of ycbcr to rgb 
+GPU_ID = "1" # which GPU to use; "99" to use all
 ####################################
 
 SAVEIMAGE_OR_DISPLAYPSNR = 0
@@ -36,12 +35,12 @@ CHECKPOINTS_PATH = "./checkpoints/" + CKPT_NAME
 IMAGE_FORMAT = "*.bmp" #*.jpg or *.bmp
 SAVE_PATH = "./result/" + CKPT_NAME
 
-# # set GPU 
-# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-# os.environ["CUDA_VISIBLE_DEVICES"]="2"
-# from tensorflow.python.client import device_lib
-# print device_lib.list_local_devices()
-
+# set GPU 
+if GPU_ID != "99":
+	os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+	os.environ["CUDA_VISIBLE_DEVICES"]=GPU_ID
+	from tensorflow.python.client import device_lib
+	print device_lib.list_local_devices()
 
 def get_img_list(data_path):
     l = glob.glob(os.path.join(data_path, "*"))
@@ -99,8 +98,10 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
     print 'folder_list', folder_list
 
     input_tensor = tf.placeholder(tf.float32, shape=(1, None, None, 1)) 
-    output_tensor, weights, loss_v_l1 = shared_model(input_tensor, 0, SCALE_FACTOR, False)
-    #output_tensor, weights = shared_model(input_tensor, SCALE_FACTOR, False)
+    try:
+    	output_tensor, weights = shared_model(input_tensor, 0, SCALE_FACTOR, False)
+    except:    
+	output_tensor, weights, _ = shared_model(input_tensor, 0, SCALE_FACTOR, False)
 
     saver = tf.train.Saver(weights)
     tf.global_variables_initializer().run()
@@ -111,7 +112,6 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
         img_list = get_img_list(folder_path)
         
         for i in range(len(img_list)):
-
             print("TESTING IMAGE [%02d/%02d]"%(i+1,len(img_list)))
             
             input_list, bic_list, gt_list, cbcr_list, scale_list, name = get_test_image(img_list, i, 1)
@@ -128,7 +128,6 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
 
             img_3b = img_3b.reshape((y.shape[0], y.shape[1], 1))
 
-            #y = y * 255.0
             y = (y + img_3b) * 255.0 
             img_cbcr = img_cbcr * 255.0
 
@@ -141,63 +140,60 @@ def test_with_sess(epoch, ckpt_path, data_path, sess, shared_model):
                 # result = np.concatenate((y, img_cbcr), axis=2)
                 # result = Image.fromarray(np.uint8(result), mode='YCbCr')
                 # result = result.convert('RGB')
-
+            if METHOD == 'm2':
             # method_2
-                # tmp = np.copy(result)
+                result = np.concatenate((y, img_cbcr), axis=2)
+                tmp = np.copy(result)
+                tmp[:, :, 0] = result[:, :, 0] - 16.0 # Y
+                tmp[:, :, 1] = result[:, :, 1] - 128.0 # Cb
+                tmp[:, :, 2] = result[:, :, 2] - 128.0 # Cr
 
-                # tmp[:, :, 0] = result[:, :, 0] - 16.0 # Y
-                # tmp[:, :, 1] = result[:, :, 1] - 128.0 # Cb
-                # tmp[:, :, 2] = result[:, :, 2] - 128.0 # Cr
+                k1 = 0.004566210045662
+                k2 = 0.006258928969944
+                k3 = -0.001536323686045
+                k4 = -0.003188110949656
+                k5 = 0.007910716233555
 
-                # k1 = 0.004566210045662
-                # k2 = 0.006258928969944
-                # k3 = -0.001536323686045
-                # k4 = -0.003188110949656
-                # k5 = 0.007910716233555
-
-                # result[:, :, 0] = k1 * tmp[:, :, 0] + k2 * tmp[:, :, 2]
-                # result[:, :, 1] = k1 * tmp[:, :, 0] + k3 * tmp[:, :, 1] + k4 * tmp[:, :, 2]
-                # result[:, :, 2] = k1 * tmp[:, :, 0] + k5 * tmp[:, :, 1]
+                result[:, :, 0] = k1 * tmp[:, :, 0] + k2 * tmp[:, :, 2]
+                result[:, :, 1] = k1 * tmp[:, :, 0] + k3 * tmp[:, :, 1] + k4 * tmp[:, :, 2]
+                result[:, :, 2] = k1 * tmp[:, :, 0] + k5 * tmp[:, :, 1]
                 
-                # result[:, :, 0] = result[:, :, 0] * 255.0
-                # result[:, :, 1] = result[:, :, 1] * 255.0 
-                # result[:, :, 2] = result[:, :, 2] * 255.0
+                result[:, :, 0] = result[:, :, 0] * 255.0
+                result[:, :, 1] = result[:, :, 1] * 255.0 
+                result[:, :, 2] = result[:, :, 2] * 255.0
 
-                # result[np.where(result < 0.0)] = 0.0
-                # result[np.where(result > 255.0)] = 255.0 
-                # result = Image.fromarray(np.uint8(result), mode='RGB')
-
+                result[np.where(result < 0.0)] = 0.0
+                result[np.where(result > 255.0)] = 255.0 
+                result = Image.fromarray(np.uint8(result), mode='RGB')
             # method_2(api)
-            # result = np.concatenate((y, img_cbcr), axis=2)
-            # result = ycbcr2rgb(result)
-            # result = Image.fromarray(np.uint8(result), mode='RGB')
-            
+                # result = np.concatenate((y, img_cbcr), axis=2)
+                # result = ycbcr2rgb(result)
+                # result = Image.fromarray(np.uint8(result), mode='RGB')         
+            else:     
             # method_3: the same formula used in method 1, but implemented by hand
-              
-            METHOD = 'm3'
-            result = np.concatenate((y, img_cbcr), axis=2)
-            tmp = np.copy(result)
+                result = np.concatenate((y, img_cbcr), axis=2)
+                tmp = np.copy(result)
 
-            tmp[:, :, 0] = result[:, :, 0] # Y
-            tmp[:, :, 1] = result[:, :, 1] - 128.0 # Cb
-            tmp[:, :, 2] = result[:, :, 2] - 128.0 # Cr
+                tmp[:, :, 0] = result[:, :, 0] # Y
+                tmp[:, :, 1] = result[:, :, 1] - 128.0 # Cb
+                tmp[:, :, 2] = result[:, :, 2] - 128.0 # Cr
 
-            k1 = 1.0
-            k2 = 0.0
-            k3 = 1.402
-            k4 = -0.344136
-            k5 = -0.714136
-            k6 = 1.772
-            k7 = 0.0
+                k1 = 1.0
+                k2 = 0.0
+                k3 = 1.402
+                k4 = -0.344136
+                k5 = -0.714136
+                k6 = 1.772
+                k7 = 0.0
 
-            result[:, :, 0] = k1 * tmp[:, :, 0] + k2 * tmp[:, :, 1] + k3 * tmp[:, :, 2]
-            result[:, :, 1] = k1 * tmp[:, :, 0] + k4 * tmp[:, :, 1] + k5 * tmp[:, :, 2]
-            result[:, :, 2] = k1 * tmp[:, :, 0] + k6 * tmp[:, :, 1] + k7 * tmp[:, :, 2]
-            
-            result[np.where(result < 0.0)] = 0.0
-            result[np.where(result > 255.0)] = 255.0
+                result[:, :, 0] = k1 * tmp[:, :, 0] + k2 * tmp[:, :, 1] + k3 * tmp[:, :, 2]
+                result[:, :, 1] = k1 * tmp[:, :, 0] + k4 * tmp[:, :, 1] + k5 * tmp[:, :, 2]
+                result[:, :, 2] = k1 * tmp[:, :, 0] + k6 * tmp[:, :, 1] + k7 * tmp[:, :, 2]
+                
+                result[np.where(result < 0.0)] = 0.0
+                result[np.where(result > 255.0)] = 255.0
 
-            result = Image.fromarray(np.uint8(result), mode='RGB')
+                result = Image.fromarray(np.uint8(result), mode='RGB')
             
             #Save the result image
             if SAVEIMAGE_OR_DISPLAYPSNR == 0:
