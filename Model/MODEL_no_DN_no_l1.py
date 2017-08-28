@@ -9,7 +9,7 @@ def prelu(x, weights, scope='prelu'):
                                  dtype=tf.float32)
         weights.append(alphas)
         pos = tf.nn.relu(x)
-        neg = alphas * (x - abs(x) * 0.5)
+        neg = alphas * (x - abs(x)) * 0.5
 
     return pos + neg, weights
 
@@ -51,7 +51,7 @@ def model(input_tensor, bic_tesor, r, train):
                                          strides=[1, 1, 1, 1], padding='SAME'), conv_3_b)
     tensor, weights = prelu(tensor, weights, scope='prelu_3')
 
-    # Conv4 1x1@32
+    # Conv4 3x3@32
     conv_4_w = tf.get_variable("conv_4_w", [3, 3, 5, 32],
                                initializer=tf.random_normal_initializer(stddev=0.001))
     conv_4_b = tf.get_variable("conv_4_b", [32],
